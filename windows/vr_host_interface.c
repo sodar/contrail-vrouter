@@ -241,6 +241,15 @@ VrInterfaceToDestination(struct vr_interface *vif)
     return destination;
 }
 
+static VOID
+MarkNetBufferListAsSafe(PNET_BUFFER_LIST NetBufferList)
+{
+    PNDIS_SWITCH_FORWARDING_DETAIL_NET_BUFFER_LIST_INFO fwd;
+
+    fwd = NET_BUFFER_LIST_SWITCH_FORWARDING_DETAIL(NetBufferList);
+    fwd->IsPacketDataSafe = TRUE;
+}
+
 static int
 __win_if_tx(struct vr_interface *vif, struct vr_packet *pkt)
 {
@@ -263,8 +272,7 @@ __win_if_tx(struct vr_interface *vif, struct vr_packet *pkt)
     NDIS_SWITCH_PORT_DESTINATION newDestination = VrInterfaceToDestination(vif);
     VrSwitchObject->NdisSwitchHandlers.AddNetBufferListDestination(VrSwitchObject->NdisSwitchContext, nbl, &newDestination);
 
-    PNDIS_SWITCH_FORWARDING_DETAIL_NET_BUFFER_LIST_INFO fwd = NET_BUFFER_LIST_SWITCH_FORWARDING_DETAIL(nbl);
-    fwd->IsPacketDataSafe = TRUE;
+    MarkNetBufferListAsSafe(nbl);
 
     NdisAdvanceNetBufferListDataStart(nbl, pkt->vp_data, TRUE, NULL);
 
