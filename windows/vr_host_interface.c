@@ -230,6 +230,17 @@ fix_ip_v4_csum(struct vr_packet *pkt) {
     }
 }
 
+static NDIS_SWITCH_PORT_DESTINATION
+VrInterfaceToDestination(struct vr_interface *vif)
+{
+    NDIS_SWITCH_PORT_DESTINATION destination = { 0 };
+
+    destination.PortId = vif->vif_port;
+    destination.NicIndex = vif->vif_nic;
+
+    return destination;
+}
+
 static int
 __win_if_tx(struct vr_interface *vif, struct vr_packet *pkt)
 {
@@ -244,16 +255,12 @@ __win_if_tx(struct vr_interface *vif, struct vr_packet *pkt)
     PWIN_PACKET_RAW winPacketRaw = WinPacketToRawPacket(winPacket);
     PNET_BUFFER_LIST nbl = WinPacketRawToNBL(winPacketRaw);
 
-    NDIS_SWITCH_PORT_DESTINATION newDestination = { 0 };
-
-    newDestination.PortId = vif->vif_port;
-    newDestination.NicIndex = vif->vif_nic;
-
     PNET_BUFFER_LIST fragmented_nbl = split_packet_if_needed(pkt);
     if (fragmented_nbl != NULL) {
         nbl = fragmented_nbl;
     }
 
+    NDIS_SWITCH_PORT_DESTINATION newDestination = VrInterfaceToDestination(vif);
     VrSwitchObject->NdisSwitchHandlers.AddNetBufferListDestination(VrSwitchObject->NdisSwitchContext, nbl, &newDestination);
 
     PNDIS_SWITCH_FORWARDING_DETAIL_NET_BUFFER_LIST_INFO fwd = NET_BUFFER_LIST_SWITCH_FORWARDING_DETAIL(nbl);
